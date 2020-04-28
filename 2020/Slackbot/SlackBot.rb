@@ -1,3 +1,4 @@
+# coding: utf-8
 require 'json'
 require 'uri'
 require 'yaml'
@@ -11,14 +12,17 @@ class SlackBot
     @incoming_webhook = ENV['INCOMING_WEBHOOK_URL'] || config["incoming_webhook_url"]
   end
 
-  def post_message(string, options = {})
-    payload = options.merge({text: string})
+ 
+  def post_message(response_text, user_id, options)
+
+    payload = options.merge({text: "<@#{user_id}> #{response_text}"})
+    
     uri = URI.parse(@incoming_webhook)
     res = nil
     json = payload.to_json
     request = "payload=" + json
 
-    Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
+    response =  Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
       http.verify_mode = OpenSSL::SSL::VERIFY_NONE
       res = http.post(uri.request_uri, request)
     end
@@ -28,8 +32,22 @@ class SlackBot
 
   def naive_respond(params, options = {})
     return nil if params[:user_name] == "slackbot" || params[:user_id] == "USLACKBOT"
-
     user_name = params[:user_name] ? "@#{params[:user_name]}" : ""
     return {text: "#{user_name} Hi!"}.merge(options).to_json
   end
+
+  def get_response(url,request_hash)
+    request = URI.encode_www_form(request_hash)
+    uri = URI.parse(url + request)
+
+    response =  Net::HTTP.start(uri.host, uri.port, use_ssl: true) do |http|
+      http.get(uri.request_uri)
+    end
+    response_hash = JSON.parse(response.body)
+
+    return response_hash
+  end
 end
+
+ 
+
