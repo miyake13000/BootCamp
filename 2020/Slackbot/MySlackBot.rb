@@ -1,13 +1,14 @@
+
 $LOAD_PATH.unshift(File.dirname(__FILE__))
 
 require 'sinatra'
-require 'SlackBot'
+require 'Parse_request'
 
-class MySlackBot < SlackBot
+class MySlackBot < Parse_request
   # cool code goes here
 end
 
-slackbot = MySlackBot.new
+parse_request = Parse_request.new
 
 set :environment, :production
 
@@ -17,5 +18,6 @@ end
 
 post '/slack' do
   content_type :json
-  slackbot.naive_respond(params, username: "Bot")
+  #slackbot.naive_respond(params, username: "MiyakeBot")
+  parse_request.parse_request(params,username:"MiyakeBot")
 end
