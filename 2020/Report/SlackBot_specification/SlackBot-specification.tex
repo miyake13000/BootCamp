@@ -1,0 +1,305 @@
+\documentclass[12pt]{jsarticle}
+\usepackage[dvipdfmx]{graphicx}
+\textheight = 25truecm
+\textwidth = 18truecm
+\topmargin = -1.5truecm
+\oddsidemargin = -1truecm
+\evensidemargin = -1truecm
+\marginparwidth = -1truecm
+
+\def\theenumii{\Alph{enumii}}
+\def\theenumiii{\alph{enumiii}}
+\def\labelenumi{(\theenumi)}
+\def\labelenumiii{(\theenumiii)}
+\def\theenumiv{\roman{enumiv}}
+\def\labelenumiv{(\theenumiv)}
+\usepackage{comment}
+\usepackage{url}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% sty/ にある研究室独自のスタイルファイル
+\usepackage{jtygm}  % フォントに関する余計な警告を消す
+\usepackage{nutils} % insertfigure, figref, tabref マクロ
+
+\def\figdir{./figs} % 図のディレクトリ
+\def\figext{pdf}    % 図のファイルの拡張子
+
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 表題
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{center}
+{\LARGE SlackBotプログラムの仕様書(修正版)}
+\end{center}
+
+\begin{flushright}
+  2020/6/24\\
+  三宅 貴義
+\end{flushright}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 概要
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{修正箇所}
+\begin{enumerate}
+  \item “任意の”という言葉を“指定の”に修正した．
+  \item \ref{sec:flor}章で，処理の流れを表す図を追加した．
+  \item \ref{sec:function}章で，機能の名前を統一した．
+  \item \ref{sec:flor}章で，実際のやり取りを図に変更した．
+  \item \ref{sec:envi}章で，設定を説明する順番を修正した．
+  \item \ref{sec:envi}章で，Incoming Webhook及び，Outgoing Webhookをアプリケーションと言及していたことを修正．
+  \item “Github”，“Incoming Webhooks”や“Place API”などの誤記を修正した．
+  \item その他の日本語の間違いを修正した．
+\end{enumerate}
+
+\section{はじめに}
+\label{sec:introduction}
+本資料は2020年度B4新人研修課題のSlackBotプログラムの仕様についてまとめたものである．
+SlackBotとは，Slack上に特定のメッセージが投稿された際に，内容に応じた返信を自動で行うプログラムである．
+本プログラムは以下の3つの機能を持つ．
+\begin{enumerate}
+  \item 文字列を返信する機能
+  \item 郵便番号を住所に変換する機能
+  \item コンビニを検索する機能
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{対象となる利用者}
+本プログラムを利用するには，以下の3つのアカウントを所有している必要がある．
+
+\begin{enumerate}
+  \item Slackアカウント
+  \item Googleアカウント
+  \item クレジットカードアカウント
+\end{enumerate}
+
+なお，クレジットカードはGoogle Places APIを利用するために必要であり，
+APIのリクエストが規定値を超えると請求が発生する．
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%　
+\section{SlackBotプログラムの処理の流れ}\label{sec:flor}
+SlackBotプログラムの処理の流れを\figref{access-map}に示す．
+
+\insertfigure[0.9]{access-map}{access-map}{SlackBotプログラムの処理の流れ}{Stream of SlackBot program.}
+
+また，\figref{access-map}の処理について以下に説明を示す．
+\begin{enumerate}
+  \item ユーザがSlackサーバにメッセージを投稿する．
+  \item SlackBotサーバは，Outgoing Webhookの機能で，Slackサーバから投稿内容を受け取る．
+  \item SlackBotサーバは，投稿内容を処理し，リクエストを作成する．
+  \item SlackBotサーバは，APIにリクエストを送信する．
+  \item SlackBotサーバは，APIから返却されたレスポンスを受け取る．
+  \item SlackBotサーバは，レスポンスを処理し，メッセージを作成する．
+  \item SlackBotサーバは，SlackサーバへIncoming Webhookを利用してメッセージを送信する．
+  \item ユーザがSlackBotサーバのメッセージを返信として受け取る．
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{機能}
+\label{sec:function}
+この章ではSlackBotプログラムの機能について説明を行う．
+
+\subsection{文字列を返信する機能}
+この機能はユーザーが指定した文字列を返信する機能である．
+この機能を使用するにはSlackに以下のように投稿する．\\
+@MiyakeBot 「$\langle$文字列$\rangle$」と言って\\
+$\langle$文字列$\rangle$には返信させる文字列を入力する．\\
+具体的なやり取りを\figref{hi}に示す．
+
+  \insertfigure[0.7]{hi}{hi}{文字列を返信する機能のやり取り}{Stream of SlackBot program.}
+
+
+\subsection{郵便番号を住所に変換する機能}
+この機能はユーザが指定した郵便番号を，住所に変換して返信する機能である．
+この機能を使用するにはSlackに以下のように投稿する．\\
+@MiyakeBot 「$\langle$郵便番号$\rangle$」の住所を検索\\
+$\langle$郵便番号$\rangle$には検索する郵便番号を入力する．\\
+具体的なやり取りを\figref{address}に示す．
+
+  \insertfigure[0.7]{address}{address}{郵便番号を検索する機能のやり取り}{Stream of SlackBot program.}
+
+
+\subsection{コンビニを検索する機能}
+この機能はユーザが指定した場所に関する情報から，その近辺のコンビニを指定した件数だけ表示する機能である．
+この機能を使用するには以下のように投稿する．\\
+@MiyakeBot 「$\langle$場所$\rangle$」のコンビニを$\langle$件数$\rangle$件検索\\
+$\langle$場所$\rangle$には検索する場所を，$\langle$件数$\rangle$には表示する件数を数字で入力する．\\
+具体的なやり取りを\figref{conveni}に示す．
+
+  \insertfigure[0.7]{conveni}{conveni}{コンビニを検索する機能のやり取り}{Stream of SlackBot program.}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{動作環境}\label{sec:envi}
+本プログラムはHerokuで動作する．
+Herokuとはクラウド上でアプリケーションの実行が可能なPaaSである．
+Herokuの環境を表\ref{tab:env_1}に示す．
+
+\begin{table}[tb]
+  \begin{center}
+    \caption{動作環境}\label{tab:env_1}
+    \ecaption{Working environment.}
+    \begin{tabular}{l|l}
+      \hline\hline
+      項目 & 内容 \\\hline
+      CPU & Intel(R) Xeon(R) CPU E5-2670 v2 @2.50GHz\\
+      メモリ & 512MB\\
+      OS & Ubuntu 18.04.4 LST\\
+      Rub & ruby 2.6.6p146\\
+      Gem & activesupport 6.0.2.2\\
+       & bundler 2.0.2\\
+       & rack 2.2.2\\
+       & rack-protection 2.0.8.1 \\
+       & ruby2\_keyeords 0.0.2\\
+       & sinatra 2.0.8.1\\
+       & tilt 2.0.10\\
+       & mustermann 1.1.1\\
+      \hline
+    \end{tabular}
+  \end{center}
+\end{table}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{環境構築}
+本プログラムを利用するには以下の手順に従って設定を行う．
+
+\begin{enumerate}
+  \item 本プログラムの入手
+  \item Incoming Webhookの設定
+  \item Google Places APIの設定
+  \item Herokuの設定　
+  \item Outgoing Webhookの設定
+\end{enumerate}
+
+それぞれの項目について，詳細を説明する．
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{本プログラムの入手}
+本プログラムはGitHub上で公開，管理されている．
+本プログラムを利用するには以下のコマンドを実行し，BootCampレポジトリをクローンする．\\
+\verb|$ git clone https://github.com/miyake13000/BootCamp|
+
+クローンしたレポジトリ内のSlackBotディレクトリを作業ディレクトリに変更する．\\
+\verb|$ cd BootCamp/2020/SlackBot|
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Incoming Webhookの設定}
+Incoming Webhookとは外部サービスからSlackにメッセージを投稿する機能である．
+
+以下にIncomig Webhookの設定の手順を示す．
+\begin{enumerate}
+  \item 自身のSlackアカウントにログインし，ワークスペースの設定から，
+       「その他の管理項目」，「アプリを管理する」，「カスタムインテグレーション」，「Incoming Webhook」，
+       「Slackに追加」の順にアクセスする．
+  \item 「チャンネルへの投稿」の項目で，投稿するチャンネルを指定する．
+  \item Incoming Webhook URLをSlackBotディレクトリ内のsettings.ymlファイルに以下のように記述する．
+        ただし，\verb|<Incoming Webhook URL>|は自身のIncoming Webhook URLである．\\
+        \verb|INCOMING_WEBHOOK_URL : <Incomig Webhook URL> |
+  \item 「設定を保存」をクリックする．
+\end{enumerate}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Google Places APIの設定}
+本プログラムはGoogle Places APIを用いているため，Googleが発行するAPIキーがなければ利用することができない．
+
+以下の手順でPlaces APIの設定を行う．
+\begin{enumerate}
+\item ブラウザで以下のサイトにアクセスし，自身のGoogleアカウントにログインする．\\
+      \verb|https://cloud.google.com/maps-platform/|
+\item 右上の「開始」ボタンをクリックし，「新しいプロジェクトの作成」を選択し，
+     「プロジェクトの選択」から「新しいプロジェクト」に進み，プロジェクト名をつけた後「作成」をクリックする．
+\item 「請求先アカウントの作成」をクリックし，クレジットカード情報を入力する．
+\item 「APIの概要に移動」をクリックし，「Places API」を選択，「有効にする」をクリックする．
+\item 「認証情報」を選択し，APIキーが表示されていることを確認し，SlackBotディレクトリ内のsetting.ymlに以下のように追記する．
+      ただし，\verb|<Your_API_key>|は自身のAPIキーである．\\
+       \verb|API_KEY : <Your_API_key>|
+\end{enumerate}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Herokuの設定}
+Herokuの設定について説明を行っていく．
+
+\begin{enumerate}
+  \item 以下のサイトにアクセスし，「Sign up」から新しいアカウントを作成する．\\
+        \verb|https://www.heroku.com|
+  \item 登録したアカウントにログインし，Rubyを選択し，「I'm ready to start」をクリックする．
+  \item 自身のOSを選択し，Heroku　CLIをダウンロードする．
+  \item 以下のコマンドを実行し，メールアドレスとパスワードを入力してHerokuにログインする．\\
+        \verb|$ heroku lonin|
+  \item 以下のコマンドを実行して，Heroku上にアプリケーションを作成する．\\
+        \verb|$ heroku create|\\
+        ここで表示されたHerokuアプリケーションのURLがSlackBotサーバのURLとなる．
+        これは後の設定で用いるため，控えておく．
+  \item 以下のコマンドを順次実行し，heroku上にSlackBotプログラムをデプロイする．\\
+        \verb|$ git add --all|\\
+        \verb|$ git commit -m "First deploy."|\\
+        \verb|$ git push origin master|
+\end{enumerate}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Outgoing Webhookの設定}
+Outgoing Webhookとは，Slackに特定の文字列を含む投稿がされると，外部サービスにメッセージを送信する機能である．
+
+以下にOutgoing Webhookの設定の手順を示す． 
+\begin{enumerate}
+  \item 自身のSlackアカウントにログインし，ワークスペースの設定から，
+  「その他の管理項目」，「アプリを管理する」，「カスタムインテグレーション」，「Outgoing Webhook」，
+  「Slackに追加」の順にアクセスする．
+  \item 「チャンネルへの投稿」の項目で，投稿するチャンネルを指定する．　
+  \item 引き金となる単語を設定する．
+  \item URLにHerokuの設定で控えたSlackBotサーバのURLを入力する．
+  \item 「設定を保存」をクリックする．
+\end{enumerate}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{使用方法}
+Slack上で指定したチャンネルで，\ref{sec:function}章で示した発言をすることで，自動的にSlackBotの返信が行われる．
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{エラー処理}
+本プログラムで実装しているエラー処理に関して以下に示す．
+
+\begin{enumerate}
+  \item 郵便番号を検索する機能に関して，郵便番号以外の値が入力された場合への対処．
+        この場合，以下のようなメッセージを返す．\\
+        Invalid Zipcode
+  \item コンビニを検索する機能に関して，表示できるコンビニが存在しない場合への対処．
+        この場合，以下のようなメッセージを返す．\\
+        No hit!
+  \item 無効なリクエストを送信した場合や，APIとの接続に失敗した場合への対処．
+        この場合，それぞれ以下のようにメッセージを返す．\\
+        郵便番号を検索する機能：Failed to exchange zipcode to address.\\
+        コンビニを検索する機能：Failed to search convenience\_store.
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{保証しない動作}
+本プログラムは以下に示す状況に関して動作の保証をしていない．
+
+\begin{enumerate}
+  \item コンビニを検索する機能で，件数に負の数や，小数が入力された場合．
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{おわりに}
+\label{sec:conclusion}
+本資料では新人研修課題のSlackBotプログラムの仕様を説明した．
+
+%\bibliographystyle{ipsjunsrt}
+%\bibliography{mybibdata}
+
+\end{document}

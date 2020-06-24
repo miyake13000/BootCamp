@@ -1,0 +1,466 @@
+\documentclass[12pt]{jsarticle}
+\usepackage[dvipdfmx]{graphicx}
+\textheight = 25truecm
+\textwidth = 18truecm
+\topmargin = -1.5truecm
+\oddsidemargin = -1truecm
+\evensidemargin = -1truecm
+\marginparwidth = -1truecm
+
+\def\theenumii{\Alph{enumii}}
+\def\theenumiii{\alph{enumiii}}
+\def\labelenumi{(\theenumi)}
+\def\labelenumiii{(\theenumiii)}
+\def\theenumiv{\roman{enumiv}}
+\def\labelenumiv{(\theenumiv)}
+\usepackage{comment}
+\usepackage{url}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% sty/ にある研究室独自のスタイルファイル
+\usepackage{jtygm}  % フォントに関する余計な警告を消す
+\usepackage{nutils} % insertfigure, figref, tabref マクロ  
+
+\def\figdir{./figs} % 図のディレクトリ
+\def\figext{pdf}    % 図のファイルの拡張子
+
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 表題
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{center}
+{\LARGE システムコール追加の手順書}
+\end{center}
+
+\begin{flushright}
+  2020/6/24\\
+  氏名：三宅 貴義\\
+\end{flushright}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 概要
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{概要}
+\label{sec:introduction}
+本資料では2020年度新人研修課題のシステムコールの実装に関して，
+システムコールを追加する手順，追加したシステムコールの概要，及びテスト方法を示す．
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%追加環境
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{追加環境}
+\label{sec:dist}
+システムコールの追加を行った環境を表\ref{tab:distribution}に示す.
+
+\begin{table}[htb]
+  \begin{center}
+    \caption{システムコールの追加環境}\label{tab:distribution}
+    \ecaption{Distribution of additional systemcall.}
+    \begin{tabular}{l|l}
+      \hline\hline
+      項目 & 内容 \\ \hline
+       OS& Debian GNU/Linux 10 (buster) \\ 
+       CPU& Intel(R) Core(TM) i7 870 \\
+       メモリ& 2.0GB \\
+       カーネル& Linux 4.19  \\
+      \hline
+    \end{tabular}
+  \end{center}
+\end{table}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%システムコールの概要
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{システムコールの概要}
+\label{sec:discri}
+この章では追加した2つのシステムコールについて概要を示す.
+
+
+\subsection{システムコール1}
+追加した1つ目のシステムコールの概要を以下に示す．
+
+\begin{description}
+  \item[システムコール名] \verb|my_syscall_1|
+  \item[システムコール番号] 335  
+  \item[形式] 64bit命令 
+  \item[引数] 任意の文字列\verb|char *str|
+  \item[戻り値] 正常終了時は0，文字列の代入ができなかった場合は-1 
+  \item[機能] 任意の文字列をカーネルバファに格納する．
+              ただし，256文字以上(終端記号含めず)の場合，255文字目まで格納される． 
+\end{description}
+
+
+\subsection{システムコール2}
+追加した2つ目のシステムコールの概要を以下に示す．
+
+\begin{description}
+  \item[システムコール名] \verb|my_syscall_2|
+  \item[システムコール番号] 336   
+  \item[形式] 64bit命令 
+  \item[引数] 任意の文字列(\verb|char *str|)，
+            文字列を格納するメモリの先頭アドレス(\verb|char *addr|)．
+  \item[戻り値] 正常終了時は0，文字列の代入ができなかった場合は-1 
+  \item[機能] 任意の文字列を指定したメモリに格納する．
+              ただし，256文字以上(終端記号含めず)の場合，255文字目まで格納される． 
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%追加手順
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{追加手順}
+\label{sec:howto}
+この章ではシステムコールの追加手順を示す.
+
+システムコールを追加するには以下の手順に従って操作を行う．
+\begin{enumerate}
+  \item カーネルソースコードの取得
+  \item システムコールの記述
+  \item カーネルの構築
+\end{enumerate}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{カーネルソースコードの取得}
+GitHub上で管理されているカーネルソースコードを，以下のコマンドを実行し，自身の端末にクローンする．\\
+\verb|$ git clone git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git|
+
+以下のコマンドを実行し，作業ディレクトリをクローンしたレポジトリに変更する．\\
+\verb|$ cd linux-stable|
+
+また，以下のコマンドでブランチを変更する．\\
+\verb|$ git branch 4.19|　
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{システムコールの記述}
+この節ではシステムコールの追加の方法について説明する．
+システムコールを追加するには以下の操作を行う．
+\begin{itemize}
+  \item システムコール番号の登録  
+  \item システムコールのコードの記述
+  \item システムコール関数のヘッダへの登録
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{システムコール表への登録}
+追加するシステムコールを以下のシステムコール表ファイルへ登録する．
+\begin{verbatim}
+  linux_stable/arch/x86/entry/syscalls/syscall_64.tbl
+\end{verbatim}
+
+システムコール表はシステムコールの番号(naumber)，形式(abi)，システムコール名(name)，
+エントリーポイント(entry\_point)を対応付けるファイルである．
+このファイルに追加するシステムコールに関するパラメータを新たに記述する．
+なおエントリーポイントは，形式的にシステムコール名に\verb|__x86_sys_|を接頭したものである．
+
+本課題では作成した2つのシステムコールについて，以下の'+'がついている行を追記した．
+\begin{verbatim}
+   345	334	common	rseq          __x64_sys_rseq
+  +346	335	common	my_syscall_1  __x64_sys_my_syscall_1
+  +347	336	common	my_syscall_2  __x64_sys_my_syscall_2
+   348
+\end{verbatim}
+
+　
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{システムコールのコードを記述}
+システムコールの実体となるコードを以下のC言語ファイルに記述する．
+\begin{verbatim}
+  linux_stable/kernel/sys.c
+\end{verbatim}
+このファイルは比較的小さなシステムコールをまとめて記述したファイルであり，
+追加するシステムコールもこのファイルに記述する．
+
+本課題で記述したコードについて，システムコール1を\ref{sec:A}に，システムコール2を\ref{sec:B}に記載する．
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{システムコール関数のヘッダへの登録}
+システムコールのプロトタイプ宣言を以下のヘッダファイルへ登録する．
+\begin{verbatim}
+  linux_stable/include/linux/syscalls.h
+\end{verbatim}　
+
+システムコールの関数名はシステムコール名に\verb|sys_|を接頭したものであり，
+本来のプロトタイプ宣言の直前に\verb|asmlinkage|をつける．
+\verb|asmlikage|とは全ての引数がスタック経由で渡されることを定義したマクロである．
+
+本課題では作成したシステムコールのプロトタイプ宣言を以下のように記述した．
+\begin{verbatim}
+   290	
+  +294	smlinkage int my_syscall_1(char *buf);
+  +295	smlinkage int my_syscall_2(char *buf, int mem_addr);
+   296	
+\end{verbatim}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{カーネルの構築}
+前節でシステムコールを追加したカーネルソースコードを，新たに起動可能なカーネルとして構築する．　　　　
+
+\begin{enumerate}
+  \item カーネルのコンパイル\\
+        カーネルソースコードをコンパイルし，イメージファイルを作成する．\\
+        \verb|$ make bzImage|
+  \item ファイルのコピー\\
+        カーネルの起動に必要なファイルをブートディレクトリにコピーする．\\
+        \verb|$ sudo cp arch/x86/boot/bzImage /boot/vmlinuz-4.19.0-linux|\\
+        \verb|$ sudo cp System.map /boot/System.map-4.19.0-linux|\\
+        \verb|$ cp /boot/config-4.19.0-6-amd64 .config|
+  \item カーネルモジュールのインストール\\
+        カーネルモジュールをコンパイルし，インストールする．\\
+        \verb|$ make modules|\\
+        \verb|$ sudo make modules_install|\\
+        このとき表示されたディレクトリ名は後の操作で必要になるため，控えておく．
+  \item 初期RAMディスクの作成\\
+        初期RAMディスクとは，実際のファイルシステムが使用できるようになる前に読み込まれる，
+        一時的なファイルシステムである．\\
+        \verb|<Directry name>|を前の操作で控えたディレクトリ名に置き換え，以下のコマンドを実行する．\\
+        \verb|$ sudo update-initramfs -c -k <Directry name>|
+  \item ブートローダの設定\\
+  インストールしたカーネルでの起動を選択できるよう，ブートローダの設定を行う．
+  ブートローダを直接操作することは危険なため，シェルスクリプトを用いて設定を行う．
+  \begin{enumerate}
+    \item スクリプトの作成\\
+    カーネルのエントリ追加用のシェルスクリプトを作成する．
+    ファイル名を\verb|11_linux-4.19.0|とし，\ref{sec:C}のスクリプトを記述したファイルを作成する．
+    \item スクリプトの配置\\
+    以下のコマンドを実行し，スクリプトをGRUBの設定ファイルとして配置する．\\
+    \verb|$ cp  11_linux-4.19.0 /etc/grub.d/|
+    \item 実行権限の付与\\
+    以下のコマンドを実行し，配置したスクリプトに実行権限を付与する．\\
+    \verb|$ sudo chmod +x /etc/grub.d/11_linux-4.19.0|
+    \item スクリプトの実行\\
+    以下のコマンドを実行し，スクリプトを実行する．\\
+    \verb|$ sudo update-grub|
+  \end{enumerate}
+\end{enumerate}
+
+以上の設定が完了すれば起動時に"My custom syscall"というカーネルで起動ができるようになっている．
+このカーネルを選択し，起動することで追加したシステムコールが使用できる．
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%テスト
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{テスト}
+\label{sec:test}
+この章では追加したシステムコールに行ったテストの手法と，その結果を示す．
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{システムコール1}
+
+\subsubsection{テスト手法}
+システムコール1が正しく動作しているかを確認するために，システムコールを実行し，
+正しい結果が出力されるかを確認する．
+
+このときシステムコールを呼び出す関数として，ライブラリ関数の\verb|syscall|関数を使用する．
+この関数は引数に，システムコール番号と，そのシステムコール本来の引数をとり，指定したシステムコールを呼び出す．
+返り値として，呼び出しに成功した場合は呼び出したシステムコールの返り値を，失敗した場合は-1を返す．
+
+テストのために作成したプログラムを\ref{sec:D}に示す．
+このテストプログラムは，以下のような処理を行っている．
+\begin{enumerate}
+  \item 文字列をコマンドライン引数として受け取る．
+  \item 文字列を引数としてシステムコールを実行する．
+  \item システムコールの呼び出し結果を表示する．
+\end{enumerate}
+
+\subsubsection{テスト結果}
+テストを行った際のシェルの内容を以下に示す．
+\begin{verbatim}
+  1  $ ./test1 test_mesage
+  2  syscall returned 0
+  3  $ dmesg | tail -n 1
+  4  [   114.813300] my_syscall_1:test_message
+\end{verbatim}
+
+1行目では，テストプログラムに"test\_message"という文字列を与えて実行している．
+3行目では，\verb|dmesg|コマンドでカーネルバッファの内容を表示している．
+カーネルバッファを全て表示させると本プログラムと関係ない内容が多く表示される．
+そのため，\verb|tail|コマンドを用いて最終行のみを表示させている．
+
+結果を確認すると，2行目で返り値が0であることからシステムコールが正しく呼び出されていることがわかる．
+また，4行目でカーネルバッファに指定した文字列が正しく格納されていることがわかる．
+このことから，システムコール1は正しく動作していることがわかる．
+
+\subsection{システムコール2}
+
+\subsubsection{テスト手法}
+システムコール2が正しく動作しているかを確認するために，システムコールを実行し，
+正しい結果が出力されるかを確認する．
+
+テストのために作成したプログラムを\ref{sec:E}に示す．
+このテストプログラムは，以下のような処理を行っている．
+\begin{enumerate}
+  \item 文字列をコマンドライン引数として受け取る．
+  \item 文字列を格納するメモリを確保する．
+  \item 文字列と，確保したメモリの先頭アドレスを引数としてシステムコールを実行する．
+  \item システムコールの呼び出し結果を表示する．
+  \item 確保したメモリの内容を表示する．
+\end{enumerate}
+
+
+\subsubsection{テスト結果}
+
+テストを行った際のシェルの内容を以下に示す．
+\begin{verbatim}
+  1  $ ./test2.c test_message
+  2  syscall returned 0
+  3  Address(0x5584ea994260):test_message
+\end{verbatim}
+
+1行目では，テストプログラムに“test\_message”という文字列を与えて実行している．
+
+結果を確認すると，2行目で返り値が0であることから，システムコールが正しく呼び出されていることがわかる．
+3行目ではメモリに指定した文字列が格納されている．
+このことからシステムコール2は正しく動作していることがわかる．　
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%まとめ
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{まとめ}
+\label{sec:conclusion}
+この資料では新人研修課題のシステムコールの追加に関する説明を行った．
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%付録
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\appendix
+\section{システムコール1のソースコード}
+\label{sec:A}
+\begin{verbatim}
+  197
+ +196	SYSCALL_DEFINE1(my_syscall_1, char*,msg)
+ +197	{
+ +198		char buf[256];
+ +199		int i;
+ +200		int length;
+ +201		for(i=0 ; msg[i]!='\0'; i++){
+ +202			if(i == 255){
+ +203				break;
+ +204			}
+ +205		}
+ +206		length = i;
+ +207		if(copy_from_user(buf,msg,length) != 0){
+ +208			return -1;
+ +209		}
+ +210		buf[length] = '\0';
+ +211		printk("custom_syscall_1:%s\n",buf);
+ +212	
+ +213		return 0;
+ +214	}
+ +215
+\end{verbatim}
+
+\section{システムコール2のソースコード}
+\label{sec:B}
+\begin{verbatim}
+ +215
+ +216	SYSCALL_DEFINE2(my_syscall_2, char*,msg, char*,addr)
+ +217	{
+ +218		char buf[256];
+ +219		int i; 
+ +220		int length;
+ +221		char *p;
+ +222	
+ +223		for(i=0; msg[i]!='\0'; i++){
+ +224			if(i == 255){
+ +225				break;
+ +226			}
+ +227		}
+ +228		length = i;
+ +229	
+ +230		if(copy_from_user(buf, msg, length) != 0){
+ +231			return -1;
+ +232		}
+ +233		buf[length] = '\0';
+ +234		p = addr;
+ +235		for(i=0; i<length; i++){
+ +236			*(p+i) = buf[i];	
+ +237		}
+ +238	
+ +239		return 0;
+ +240	}
+  241
+\end{verbatim}
+
+\section{カーネルエントリ追加用のスクリプト}
+\label{sec:C}
+  \begin{verbatim}
+  1 #!/bin/sh -e
+  2 echo "Adding my custom Linux to GRUB2"
+  3 cat << EOF
+  4 menuentry "My custom Linux" {
+  5 set root=(hd0,1)
+  6 linux /vmlinuz-4.19.0-linux ro root=/dev/sda3 quiet
+  7 initrd /initrd.img-4.19.0
+  8 } 
+\end{verbatim}
+
+\section{システムコール1のテストプログラム}
+\label{sec:D}
+\begin{verbatim}
+  1	#include <stdio.h>
+  2	#include <stdlib.h>
+  3	#include <string.h>
+  4	#include <unistd.h>
+  5	#include <sys/syscall.h>
+  6	
+  7	#define syscall_num 335
+  8	
+  9	int main(int argc, char* argv[])
+ 10	{
+ 11	  int res;
+ 12	
+ 13	  if(argc >= 2){
+ 14	    res = syscall(syscall_num, argv[1]);
+ 15	    printf("syscall returned %ld\n", res);
+ 16	    free(p);
+ 17	  }else{
+ 18	    printf("Input argue\n");
+ 19	    res = 0;
+ 20	  }
+ 21	  return res;
+ 22	}
+\end{verbatim}
+
+\section{システムコール2のテストプログラム}
+\label{sec:E}
+\begin{verbatim}
+  1	#include <stdio.h>
+  2	#include <stdlib.h>
+  3	#include <string.h>
+  4	#include <unistd.h>
+  5	#include <sys/syscall.h>
+  6	
+  7	#define syscall_num 336
+  8	
+  9	int main(int argc, char* argv[])
+ 10	{
+ 11	  int res;
+ 12	  char* p;
+ 13	
+ 14	  if(argc >= 3){
+ 15	    p = (char*)malloc(strle(srg[1])*sizeof(char)+1);
+ 16	    res = syscall(syscall_num, argv[1], p);
+ 17	    printf("syscall returned %ld\n", res);
+ 18	    printf("Address(%p):%s\n", p, p);
+ 19	    free(p);
+ 20	  }else{
+ 21	    printf("Input argue\n");
+ 22	    res = 0;
+ 23	  }
+ 24	  return res;
+ 25	}
+\end{verbatim}
+
+
+\end{document}

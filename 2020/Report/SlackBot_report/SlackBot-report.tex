@@ -1,0 +1,93 @@
+\documentclass[12pt]{jsarticle}
+\usepackage[dvipdfmx]{graphicx}
+\textheight = 25truecm
+\textwidth = 18truecm
+\topmargin = -1.5truecm
+\oddsidemargin = -1truecm
+\evensidemargin = -1truecm
+\marginparwidth = -1truecm
+
+\def\theenumii{\Alph{enumii}}
+\def\theenumiii{\alph{enumiii}}
+\def\labelenumi{(\theenumi)}
+\def\labelenumiii{(\theenumiii)}
+\def\theenumiv{\roman{enumiv}}
+\def\labelenumiv{(\theenumiv)}
+\usepackage{comment}
+\usepackage{url}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% sty/ にある研究室独自のスタイルファイル
+\usepackage{jtygm}  % フォントに関する余計な警告を消す
+\usepackage{nutils} % insertfigure, figref, tabref マクロ
+
+\def\figdir{./figs} % 図のディレクトリ
+\def\figext{pdf}    % 図のファイルの拡張子
+
+\begin{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 表題
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{center}
+{\LARGE SlackBotプログラム作成の報告書}
+\end{center}
+
+\begin{flushright}
+  2020/6/24\\
+  三宅 貴義
+\end{flushright}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% 概要
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{はじめに}
+\label{sec:introduction}
+本資料は，2020年度B4新人研修課題であるSlackBotプログラム作成の報告書である．
+
+
+\section{作成した機能}\label{sec:hoge}
+作成したSlackBotプログラムは以下の3つの機能を持つ．
+
+\begin{enumerate}
+  \item 文字列を返信する機能\\
+        ユーザが“(文字列)と言って”と投稿した際に，“(文字列)”と返信する機能．
+  \item 郵便番号を住所に変換する機能\\
+        ユーザが“(郵便番号)の住所”と投稿した際に，(郵便番号)を対応する住所に変換して返信する機能
+  \item コンビニを検索する機能\\
+        ユーザが“(住所)のコンビニを(件数)件検索”と投稿した際に，
+        (住所)の近くにあるコンビニの名前とGoogle MapのURLを(件数)分返信する機能
+\end{enumerate}
+
+
+\section{理解できなかった部分}
+本課題を進めていく中で，理解できなかった部分を以下に示す．
+
+\begin{enumerate}
+  \item sinatraの仕組み\\
+        SlackBotプログラムはWebアプリケーションフレームワークであるsinatraを用いて動作している．
+        これがどうのような仕組みなのかが理解できなかった．
+\end{enumerate}
+
+\section{作成できなかった機能}
+作成できなかった機能を以下に示す．
+
+\begin{enumerate}
+  \item 検索したコンビニの画像や，画像のURLを返信する機能
+\end{enumerate}
+
+\section{自主的に作成した機能}
+課題として提示されていないが，自主的に作成した機能を以下に示す．
+
+\begin{enumerate}
+  \item プログラム作成者以外のSlackアカウントからSlackBotサーバへPOSTされた際に，返信をしない機能
+  \item 投稿をしたユーザへのメンションをつけて，返信する機能
+\end{enumerate}
+
+
+\section{おわりに}
+\label{sec:conclusion}
+本資料では，SlackBotプログラム作成の報告を行った．
+
+%\bibliographystyle{ipsjunsrt}
+%\bibliography{mybibdata}
+
+\end{document}
